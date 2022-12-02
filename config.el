@@ -32,30 +32,61 @@
 ;; There are two ways to load a theme. Both assume the theme is installed and
 ;; available. You can either set `doom-theme' or manually load a theme with the
 ;; `load-theme' function. This is the default:
-(setq doom-theme 'doom-one)
+(setq doom-theme 'doom-nord)
 
 ;; This determines the style of line numbers in effect. If set to `nil', line
 ;; numbers are disabled. For relative line numbers, set this to `relative'.
 (setq display-line-numbers-type t)
-(setq doom-font (font-spec :family "IBM Plex Mono" :size 13 :weight 'regular)
+(setq doom-font (font-spec :family "IBM Plex Mono" :size 14 :weight 'regular)
       doom-variable-pitch-font (font-spec :family "IBM Plex Sans" :size 14))
 
 (add-to-list 'default-frame-alist '(height . 24))
 (add-to-list 'default-frame-alist '(width . 80))
 
-(setq doom-theme 'doom-nord)
-
 (with-eval-after-load 'doom-themes
   (doom-themes-treemacs-config)
   (doom-themes-org-config))
 
+;; Visual design changes
+(unless (equal "Battery status not available"
+               (battery))
+  (display-battery-mode 1))  ; On laptops it's nice to know how much power you have
+
+(after! centaur-tabs
+  (setq centaur-tabs-style "wave"))
+
 ;; If you use `org' and don't want your org files in the default location below,
 ;; change `org-directory'. It must be set before org loads!
-(setq org-directory "~Dropbox/org/")
-(setq org-id-files "~/Dropbox/org/")
+(setq org-directory "~/Dropbox/org")
+(setq org-id-files "~/Dropbox/org")
+(setq org-agenda-files (list "inbox.org" "agenda.org" "work.org" "notes.org"))
+(setq org-agenda-include-diary t)
+
+(setq org-capture-templates
+      `(("i" "Inbox" entry (file "inbox.org")
+         ,(concat "* TODO %?\n"
+                  "/Entered on/ %U"))))
+(define-key global-map (kbd "C-c c") 'org-capture)
+
+(defun org-capture-inbox ()
+     (interactive)
+     (call-interactively 'org-store-link)
+     (org-capture nil "i"))
+
+(define-key global-map (kbd "C-c i") 'org-capture-inbox)
+
 (after! org
   (setq org-roam-directory "~/Dropbox/org/roam")
   (setq org-roam-index-file "~/Dropbox/org/roam/index.org"))
+
+;; accept completion from copilot and fallback to company
+(use-package! copilot
+  :hook (prog-mode . copilot-mode)
+  :bind (("C-TAB" . 'copilot-accept-completion-by-word)
+         ("C-<tab>" . 'copilot-accept-completion-by-word)
+         :map copilot-completion-map
+         ("<tab>" . 'copilot-accept-completion)
+         ("TAB" . 'copilot-accept-completion)))
 
 ;; Whenever you reconfigure a package, make sure to wrap your config in an
 ;; `after!' block, otherwise Doom's defaults may override your settings. E.g.
