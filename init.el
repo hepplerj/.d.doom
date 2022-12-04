@@ -195,5 +195,3 @@
 
 ;; Evil changes
 (setq evil-respect-visual-line-mode t)
-
-
