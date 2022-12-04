@@ -32,28 +32,71 @@
 ;; There are two ways to load a theme. Both assume the theme is installed and
 ;; available. You can either set `doom-theme' or manually load a theme with the
 ;; `load-theme' function. This is the default:
-(setq doom-theme 'doom-nord)
+;;(setq doom-theme 'doom-nord)
+
+(setq doom-theme 'nil)
+(require 'nano-base-colors)
+(require 'nano-colors)
+(require 'nano-faces)
+(require 'nano-theme)
+(require 'nano-theme-dark)
+(require 'nano-theme-light)
+(require 'nano-splash)
+(require 'nano-modeline)
+
+;;; Define Nano dark & light theme functions
+
+(defun nano-theme-dark ()
+  "Enable dark Nano theme and customizations."
+  (interactive)
+  (nano-theme-set-dark)
+  (nano-faces)
+  (nano-theme)
+  ;; Fall back font for glyph missing in Roboto
+  (defface fallback '((t :family "Fira Code"
+                         :inherit 'nano-face-faded)) "Fallback")
+  (set-display-table-slot standard-display-table 'truncation
+                          (make-glyph-code ?… 'fallback))
+  (set-display-table-slot standard-display-table 'wrap
+                          (make-glyph-code ?↩ 'fallback)))
+
+(defun nano-theme-light ()
+  "Enable light Nano theme and customizations."
+  (interactive)
+  (nano-theme-set-light)
+  (nano-faces)
+  (nano-theme)
+  ;; Fall back font for glyph missing in Roboto
+  (defface fallback '((t :family "Fira Code"
+                         :inherit 'nano-face-faded)) "Fallback")
+  (set-display-table-slot standard-display-table 'truncation
+                          (make-glyph-code ?… 'fallback))
+  (set-display-table-slot standard-display-table 'wrap
+                          (make-glyph-code ?↩ 'fallback)))
+
+;; Set Theme
+(nano-theme-light)
 
 ;; This determines the style of line numbers in effect. If set to `nil', line
 ;; numbers are disabled. For relative line numbers, set this to `relative'.
 (setq display-line-numbers-type t)
-(setq doom-font (font-spec :family "IBM Plex Mono" :size 14 :weight 'regular)
-      doom-variable-pitch-font (font-spec :family "IBM Plex Sans" :size 14))
+;;(setq doom-font (font-spec :family "IBM Plex Mono" :size 14 :weight 'regular)
+;;      doom-variable-pitch-font (font-spec :family "IBM Plex Sans" :size 14))
 
 (add-to-list 'default-frame-alist '(height . 24))
 (add-to-list 'default-frame-alist '(width . 80))
 
-(with-eval-after-load 'doom-themes
-  (doom-themes-treemacs-config)
-  (doom-themes-org-config))
+;;(with-eval-after-load 'doom-themes
+;;  (doom-themes-treemacs-config)
+;;  (doom-themes-org-config))
 
 ;; Visual design changes
-(unless (equal "Battery status not available"
-               (battery))
-  (display-battery-mode 1))  ; On laptops it's nice to know how much power you have
+;;(unless (equal "Battery status not available"
+;;               (battery))
+;;  (display-battery-mode 1))  ; On laptops it's nice to know how much power you have
 
-(after! centaur-tabs
-  (setq centaur-tabs-style "wave"))
+;;(after! centaur-tabs
+;;  (setq centaur-tabs-style "wave"))
 
 ;; If you use `org' and don't want your org files in the default location below,
 ;; change `org-directory'. It must be set before org loads!
@@ -63,9 +106,19 @@
 (setq org-agenda-include-diary t)
 
 (setq org-capture-templates
-      `(("i" "Inbox" entry (file "inbox.org")
-         ,(concat "* TODO %?\n"
-                  "/Entered on/ %U"))))
+      `(("i" "Inbox" entry  (file "inbox.org")
+        ,(concat "* TODO %?\n"
+                 "/Entered on/ %U"))
+        ("m" "Meeting" entry  (file+headline "agenda.org" "Future")
+        ,(concat "* %? :meeting:\n"
+                 "<%<%Y-%m-%d %a %H:00>>"))
+        ("n" "Note" entry  (file "notes.org")
+        ,(concat "* Note (%a)\n"
+                 "/Entered on/ %U\n" "\n" "%?"))
+        ("@" "Inbox [mu4e]" entry (file "inbox.org")
+        ,(concat "* TODO Reply to \"%a\" %?\n"
+                 "/Entered on/ %U"))))
+
 (define-key global-map (kbd "C-c c") 'org-capture)
 
 (defun org-capture-inbox ()
@@ -73,11 +126,53 @@
      (call-interactively 'org-store-link)
      (org-capture nil "i"))
 
-(define-key global-map (kbd "C-c i") 'org-capture-inbox)
+;; Use full window for org-capture
+(add-hook 'org-capture-mode-hook 'delete-other-windows)
+
+(define-key global-map            (kbd "C-c a") 'org-agenda)
+(define-key global-map            (kbd "C-c c") 'org-capture)
+(define-key global-map            (kbd "C-c i") 'org-capture-inbox)
 
 (after! org
   (setq org-roam-directory "~/Dropbox/org/roam")
   (setq org-roam-index-file "~/Dropbox/org/roam/index.org"))
+
+(use-package! org-ref
+    ;:after org-roam
+    :config
+    (setq
+         org-ref-completion-library 'org-ref-ivy-cite
+         org-ref-get-pdf-filename-function 'org-ref-get-pdf-filename-helm-bibtex
+         bibtex-completion-bibliography (list "/Users/jheppler/Dropbox/00-09 Writing/00.01 Nature of the Valley/bib/manuscript.bib")
+         bibtex-completion-notes "/Users/jheppler/Dropbox/00-09 Writing/00.01 Nature of the Valley/bib/bibnotes.org"
+         org-ref-note-title-format "* %y - %t\n :PROPERTIES:\n  :Custom_ID: %k\n  :NOTER_DOCUMENT: %F\n :ROAM_KEY: cite:%k\n  :AUTHOR: %9a\n  :JOURNAL: %j\n  :YEAR: %y\n  :VOLUME: %v\n  :PAGES: %p\n  :DOI: %D\n  :URL: %U\n :END:\n\n"
+         org-ref-notes-directory "~/Dropbox/org/notes/"
+         org-ref-notes-function 'orb-edit-notes
+    ))
+
+(after! org-ref
+(setq
+ bibtex-completion-notes-path "/Users/jheppler/Dropbox/org/notes/"
+ bibtex-completion-bibliography "/Users/jheppler/Dropbox/00-09 Writing/00.01 Nature of the Valley/bib/manuscript.bib"
+ bibtex-completion-pdf-field "file"
+ bibtex-completion-notes-template-multiple-files
+ (concat
+  "#+TITLE: ${title}\n"
+  "#+ROAM_KEY: cite:${=key=}\n"
+  "* TODO Notes\n"
+  ":PROPERTIES:\n"
+  ":Custom_ID: ${=key=}\n"
+  ":NOTER_DOCUMENT: %(orb-process-file-field \"${=key=}\")\n"
+  ":AUTHOR: ${author-abbrev}\n"
+  ":JOURNAL: ${journaltitle}\n"
+  ":DATE: ${date}\n"
+  ":YEAR: ${year}\n"
+  ":DOI: ${doi}\n"
+  ":URL: ${url}\n"
+  ":END:\n\n"
+  )
+ )
+)
 
 ;; accept completion from copilot and fallback to company
 (use-package! copilot
@@ -87,6 +182,12 @@
          :map copilot-completion-map
          ("<tab>" . 'copilot-accept-completion)
          ("TAB" . 'copilot-accept-completion)))
+
+(use-package! focus
+  :after org-roam
+  :config
+        (add-to-list 'focus-mode-to-thing '(org-mode . paragraph))
+  )
 
 ;; Whenever you reconfigure a package, make sure to wrap your config in an
 ;; `after!' block, otherwise Doom's defaults may override your settings. E.g.
