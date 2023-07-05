@@ -76,6 +76,7 @@
 
 ;; Set Theme
 (nano-theme-light)
+(global-set-key (kbd "C-c t t") 'nano-toggle-theme)
 
 ;; This determines the style of line numbers in effect. If set to `nil', line
 ;; numbers are disabled. For relative line numbers, set this to `relative'.
@@ -102,11 +103,12 @@
 ;; change `org-directory'. It must be set before org loads!
 (setq org-directory "~/Dropbox/org")
 (setq org-id-files "~/Dropbox/org")
-(setq org-agenda-files (list "inbox.org" "agenda.org" "work.org" "notes.org"))
+(setq org-agenda-files (list "inbox.org" "refile.org" "agenda.org" "work.org" "notes.org"))
 (setq org-agenda-include-diary t)
+(setq org-log-done 'time)
 
 (setq org-capture-templates
-      `(("i" "Inbox" entry  (file "inbox.org")
+      `(("i" "Inbox" entry  (file "refile.org")
         ,(concat "* TODO %?\n"
                  "/Entered on/ %U"))
         ("m" "Meeting" entry  (file+headline "agenda.org" "Future")
@@ -118,6 +120,8 @@
         ("@" "Inbox [mu4e]" entry (file "inbox.org")
         ,(concat "* TODO Reply to \"%a\" %?\n"
                  "/Entered on/ %U"))))
+
+(setq package-check-signature nil)
 
 (define-key global-map (kbd "C-c c") 'org-capture)
 
@@ -133,9 +137,64 @@
 (define-key global-map            (kbd "C-c c") 'org-capture)
 (define-key global-map            (kbd "C-c i") 'org-capture-inbox)
 
-(after! org
-  (setq org-roam-directory "~/Dropbox/org/roam")
-  (setq org-roam-index-file "~/Dropbox/org/roam/index.org"))
+;; TODO
+(setq org-todo-keywords
+      '((sequence "TODO(t)" "NEXT(n)" "HOLD(h)" "|" "DONE(d)")))
+(defun log-todo-next-creation-date (&rest ignore)
+  "Log NEXT creation time in the property drawer under the key 'ACTIVATED'"
+  (when (and (string= (org-get-todo-state) "NEXT")
+             (not (org-entry-get nil "ACTIVATED")))
+    (org-entry-put nil "ACTIVATED" (format-time-string "[%Y-%m-%d]"))))
+(add-hook 'org-after-todo-state-change-hook #'log-todo-next-creation-date)
+
+;; Agenda
+(setq org-agenda-custom-commands
+      '(("g" "Get Things Done (GTD)"
+         ((agenda ""
+                  ;;((org-agenda-span 'day))
+                  ((org-agenda-skip-function
+                    '(org-agenda-skip-entry-if 'deadline))
+                   (org-deadline-warning-days 0)))
+          (todo "NEXT"
+                ((org-agenda-skip-function
+                  '(org-agenda-skip-entry-if 'deadline))
+                 (org-agenda-prefix-format "  %i %-12:c [%e] ")
+                 (org-agenda-overriding-header "\nTasks\n")))
+          (agenda nil
+                  ((org-agenda-entry-types '(:deadline))
+                   (org-agenda-format-date "")
+                   (org-deadline-warning-days 7)
+                   ;;(org-agenda-skip-function
+                   ;; '(org-agenda-skip-entry-if 'notregexp "\\* NEXT"))
+                   (org-agenda-overriding-header "\nDeadlines")))
+          (tags-todo "inbox"
+                     ((org-agenda-prefix-format "  %?-12t% s")
+                      (org-agenda-overriding-header "\nInbox\n")))
+          (tags "CLOSED>=\"<today>\""
+                ((org-agenda-overriding-header "\nCompleted today\n")))))))
+
+;;(after! org
+;;  (setq org-roam-directory "~/Dropbox/org/roam")
+;;  (setq org-roam-index-file "~/Dropbox/org/roam/index.org"))
+
+(use-package org-roam
+  :ensure t
+  :custom
+  (org-roam-directory (file-truename "~/Dropbox/org/roam"))
+  :bind (("C-c n l" . org-roam-buffer-toggle)
+         ("C-c n f" . org-roam-node-find)
+         ("C-c n g" . org-roam-graph)
+         ("C-c n i" . org-roam-node-insert)
+         ("C-c n c" . org-roam-capture)
+         ;; Dailies
+         ("C-c n j" . org-roam-dailies-capture-today))
+  :config
+  ;; If you're using a vertical completion framework, you might want a more informative completion interface
+  (setq org-roam-node-display-template (concat "${title:*} " (propertize "${tags:10}" 'face 'org-tag)))
+  (setq org-roam-index-file "~/Dropbox/org/roam/index.org")
+  (org-roam-db-autosync-mode)
+  ;; If using org-roam-protocol
+  (require 'org-roam-protocol))
 
 (use-package! org-ref
     ;:after org-roam
@@ -173,6 +232,8 @@
   )
  )
 )
+
+(setq org-ref-insert-cite-key "C-c )")
 
 ;; accept completion from copilot and fallback to company
 (use-package! copilot
