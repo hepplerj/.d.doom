@@ -15,7 +15,7 @@
 ;; - `doom-variable-pitch-font' -- a non-monospace font (where applicable)
 ;; - `doom-big-font' -- used for `doom-big-font-mode'; use this for
 ;;   presentations or streaming.
-;; - `doom-unicode-font' -- for unicode glyphs
+;; - `doom-symbol-font' -- for symbols
 ;; - `doom-serif-font' -- for the `fixed-pitch-serif' face
 ;;
 ;; See 'C-h v doom-font' for documentation and more examples of what they
@@ -31,52 +31,8 @@
 
 ;; There are two ways to load a theme. Both assume the theme is installed and
 ;; available. You can either set `doom-theme' or manually load a theme with the
-;; `load-theme' function. This is the default:
-;;(setq doom-theme 'doom-nord)
-
-(setq doom-theme 'nil)
-(require 'nano-base-colors)
-(require 'nano-colors)
-(require 'nano-faces)
-(require 'nano-theme)
-(require 'nano-theme-dark)
-(require 'nano-theme-light)
-(require 'nano-splash)
-(require 'nano-modeline)
-
-;;; Define Nano dark & light theme functions
-
-(defun nano-theme-dark ()
-  "Enable dark Nano theme and customizations."
-  (interactive)
-  (nano-theme-set-dark)
-  (nano-faces)
-  (nano-theme)
-  ;; Fall back font for glyph missing in Roboto
-  (defface fallback '((t :family "Fira Code"
-                         :inherit 'nano-face-faded)) "Fallback")
-  (set-display-table-slot standard-display-table 'truncation
-                          (make-glyph-code ?… 'fallback))
-  (set-display-table-slot standard-display-table 'wrap
-                          (make-glyph-code ?↩ 'fallback)))
-
-(defun nano-theme-light ()
-  "Enable light Nano theme and customizations."
-  (interactive)
-  (nano-theme-set-light)
-  (nano-faces)
-  (nano-theme)
-  ;; Fall back font for glyph missing in Roboto
-  (defface fallback '((t :family "Fira Code"
-                         :inherit 'nano-face-faded)) "Fallback")
-  (set-display-table-slot standard-display-table 'truncation
-                          (make-glyph-code ?… 'fallback))
-  (set-display-table-slot standard-display-table 'wrap
-                          (make-glyph-code ?↩ 'fallback)))
-
-;; Set Theme
-(nano-theme-light)
-(global-set-key (kbd "C-c t t") 'nano-toggle-theme)
+;; `load-theme' function.
+(setq doom-theme 'doom-nord)
 
 ;; This determines the style of line numbers in effect. If set to `nil', line
 ;; numbers are disabled. For relative line numbers, set this to `relative'.
@@ -87,21 +43,10 @@
 (add-to-list 'default-frame-alist '(height . 24))
 (add-to-list 'default-frame-alist '(width . 80))
 
-;;(with-eval-after-load 'doom-themes
-;;  (doom-themes-treemacs-config)
-;;  (doom-themes-org-config))
-
-;; Visual design changes
-;;(unless (equal "Battery status not available"
-;;               (battery))
-;;  (display-battery-mode 1))  ; On laptops it's nice to know how much power you have
-
-;;(after! centaur-tabs
-;;  (setq centaur-tabs-style "wave"))
-
 ;; If you use `org' and don't want your org files in the default location below,
 ;; change `org-directory'. It must be set before org loads!
-(setq org-directory "~/Dropbox/org")
+;;(setq org-directory "~/Dropbox/org/")
+(setq org-directory (concat (getenv "HOME") "/Dropbox/org/"))
 (setq org-id-files "~/Dropbox/org")
 (setq org-agenda-files (list "inbox.org" "refile.org" "agenda.org" "work.org" "notes.org"))
 (setq org-agenda-include-diary t)
@@ -173,67 +118,19 @@
           (tags "CLOSED>=\"<today>\""
                 ((org-agenda-overriding-header "\nCompleted today\n")))))))
 
-;;(after! org
-;;  (setq org-roam-directory "~/Dropbox/org/roam")
-;;  (setq org-roam-index-file "~/Dropbox/org/roam/index.org"))
 
 (use-package org-roam
-  :ensure t
+  :after org
   :custom
-  (org-roam-directory (file-truename "~/Dropbox/org/roam"))
+  (org-roam-directory (file-truename org-directory))
+  :init
   :bind (("C-c n l" . org-roam-buffer-toggle)
          ("C-c n f" . org-roam-node-find)
          ("C-c n g" . org-roam-graph)
          ("C-c n i" . org-roam-node-insert)
          ("C-c n c" . org-roam-capture)
          ;; Dailies
-         ("C-c n j" . org-roam-dailies-capture-today))
-  :config
-  ;; If you're using a vertical completion framework, you might want a more informative completion interface
-  (setq org-roam-node-display-template (concat "${title:*} " (propertize "${tags:10}" 'face 'org-tag)))
-  (setq org-roam-index-file "~/Dropbox/org/roam/index.org")
-  (org-roam-db-autosync-mode)
-  ;; If using org-roam-protocol
-  (require 'org-roam-protocol))
-
-(use-package! org-ref
-    ;:after org-roam
-    :config
-    (setq
-         org-ref-completion-library 'org-ref-ivy-cite
-         org-ref-get-pdf-filename-function 'org-ref-get-pdf-filename-helm-bibtex
-         bibtex-completion-bibliography (list "/Users/jheppler/Dropbox/00-09 Writing/00.01 Nature of the Valley/bib/manuscript.bib")
-         bibtex-completion-notes "/Users/jheppler/Dropbox/00-09 Writing/00.01 Nature of the Valley/bib/bibnotes.org"
-         org-ref-note-title-format "* %y - %t\n :PROPERTIES:\n  :Custom_ID: %k\n  :NOTER_DOCUMENT: %F\n :ROAM_KEY: cite:%k\n  :AUTHOR: %9a\n  :JOURNAL: %j\n  :YEAR: %y\n  :VOLUME: %v\n  :PAGES: %p\n  :DOI: %D\n  :URL: %U\n :END:\n\n"
-         org-ref-notes-directory "~/Dropbox/org/notes/"
-         org-ref-notes-function 'orb-edit-notes
-    ))
-
-(after! org-ref
-(setq
- bibtex-completion-notes-path "/Users/jheppler/Dropbox/org/notes/"
- bibtex-completion-bibliography "/Users/jheppler/Dropbox/00-09 Writing/00.01 Nature of the Valley/bib/manuscript.bib"
- bibtex-completion-pdf-field "file"
- bibtex-completion-notes-template-multiple-files
- (concat
-  "#+TITLE: ${title}\n"
-  "#+ROAM_KEY: cite:${=key=}\n"
-  "* TODO Notes\n"
-  ":PROPERTIES:\n"
-  ":Custom_ID: ${=key=}\n"
-  ":NOTER_DOCUMENT: %(orb-process-file-field \"${=key=}\")\n"
-  ":AUTHOR: ${author-abbrev}\n"
-  ":JOURNAL: ${journaltitle}\n"
-  ":DATE: ${date}\n"
-  ":YEAR: ${year}\n"
-  ":DOI: ${doi}\n"
-  ":URL: ${url}\n"
-  ":END:\n\n"
-  )
- )
-)
-
-(setq org-ref-insert-cite-key "C-c )")
+         ("C-c n j" . org-roam-dailies-capture-today)))
 
 ;; accept completion from copilot and fallback to company
 (use-package! copilot
@@ -243,12 +140,6 @@
          :map copilot-completion-map
          ("<tab>" . 'copilot-accept-completion)
          ("TAB" . 'copilot-accept-completion)))
-
-(use-package! focus
-  :after org-roam
-  :config
-        (add-to-list 'focus-mode-to-thing '(org-mode . paragraph))
-  )
 
 ;; Whenever you reconfigure a package, make sure to wrap your config in an
 ;; `after!' block, otherwise Doom's defaults may override your settings. E.g.

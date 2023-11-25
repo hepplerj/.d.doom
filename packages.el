@@ -53,6 +53,8 @@
              '("melpa" . "https://melpa.org/packages/") t)
 (package-initialize)
 
+(package! emacsql-sqlite3)
+
 (package! copilot
   :recipe (:host github :repo "zerolfx/copilot.el" :files ("*.el" "dist")))
 
